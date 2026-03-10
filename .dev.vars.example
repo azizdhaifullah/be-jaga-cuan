@@ -1,0 +1,2 @@
+JWT_SECRET=replace-with-dev-secret
+OTP_FIXED_CODE=123456

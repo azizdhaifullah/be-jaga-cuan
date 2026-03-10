@@ -1,0 +1,30 @@
+name = "jaga-cuan-backend"
+main = "src/index.ts"
+compatibility_date = "2026-03-10"
+
+[vars]
+APP_ENV = "dev"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "jaga-cuan-dev"
+database_id = "local-dev"
+
+[observability.logs]
+enabled = true
+
+[env.staging.vars]
+APP_ENV = "staging"
+
+[[env.staging.d1_databases]]
+binding = "DB"
+database_name = "jaga-cuan-staging"
+database_id = "staging-id"
+
+[env.production.vars]
+APP_ENV = "prod"
+
+[[env.production.d1_databases]]
+binding = "DB"
+database_name = "jaga-cuan-prod"
+database_id = "prod-id"
