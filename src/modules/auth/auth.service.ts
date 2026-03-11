@@ -15,8 +15,8 @@ type VerifyOtpResult = {
 };
 
 class AuthService {
-  async requestOtp(email: string, env?: { OTP_FIXED_CODE?: string; DB?: D1Database }) {
-    const session = await authRepository.createOtpSession(email, getOtpCode(env), env?.DB);
+  async requestOtp(email: string, env?: { OTP_FIXED_CODE?: string; DATABASE_URL?: string }) {
+    const session = await authRepository.createOtpSession(email, getOtpCode(env), env?.DATABASE_URL);
     const masked = `${email[0]}***@${email.split('@')[1]}`;
     return {
       otp_session_id: session.id,
@@ -27,14 +27,14 @@ class AuthService {
   async verifyOtp(
     otpSessionId: string,
     otpCode: string,
-    env?: { DB?: D1Database },
+    env?: { DATABASE_URL?: string },
   ): Promise<VerifyOtpResult> {
-    const session = await authRepository.findOtpSession(otpSessionId, env?.DB);
+    const session = await authRepository.findOtpSession(otpSessionId, env?.DATABASE_URL);
     if (!session || session.code !== otpCode) {
       throw new ApiError('AUTH_INVALID_OTP', 401, 'Kode OTP salah atau kadaluarsa.');
     }
-    await authRepository.consumeOtpSession(otpSessionId, env?.DB);
-    const user = await authRepository.upsertUser(session.email, env?.DB);
+    await authRepository.consumeOtpSession(otpSessionId, env?.DATABASE_URL);
+    const user = await authRepository.upsertUser(session.email, env?.DATABASE_URL);
     return {
       access_token: `access-${user.id}`,
       refresh_token: `refresh-${user.id}`,

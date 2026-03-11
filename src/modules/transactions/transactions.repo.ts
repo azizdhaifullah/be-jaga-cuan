@@ -1,4 +1,5 @@
 import type { TransactionType } from '../../core/types';
+import { query } from '../../core/db';
 
 export type TransactionRecord = {
   id: string;
@@ -13,32 +14,29 @@ export type TransactionRecord = {
 class TransactionsRepository {
   private readonly transactions: TransactionRecord[] = [];
 
-  async listByWallet(walletId: string, db?: D1Database) {
-    if (db) {
-      const rows = await db
-        .prepare(
-          'SELECT id, wallet_id, amount, type, category, created_by, timestamp FROM transactions WHERE wallet_id = ?1 ORDER BY timestamp DESC',
-        )
-        .bind(walletId)
-        .all<TransactionRecord>();
-      return rows.results;
+  async listByWallet(walletId: string, databaseUrl?: string) {
+    if (databaseUrl) {
+      return query<TransactionRecord>(
+        databaseUrl,
+        'SELECT id, wallet_id, amount, type, category, created_by, timestamp FROM transactions WHERE wallet_id = ?1 ORDER BY timestamp DESC',
+        [walletId],
+      );
     }
     return this.transactions
       .filter((tx) => tx.wallet_id === walletId)
       .sort((a, b) => b.timestamp.localeCompare(a.timestamp));
   }
 
-  async create(payload: Omit<TransactionRecord, 'id'>, db?: D1Database) {
+  async create(payload: Omit<TransactionRecord, 'id'>, databaseUrl?: string) {
     const record: TransactionRecord = {
       id: crypto.randomUUID(),
       ...payload,
     };
-    if (db) {
-      await db
-        .prepare(
-          'INSERT INTO transactions (id, wallet_id, amount, type, category, created_by, timestamp) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)',
-        )
-        .bind(
+    if (databaseUrl) {
+      await query(
+        databaseUrl,
+        'INSERT INTO transactions (id, wallet_id, amount, type, category, created_by, timestamp) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7)',
+        [
           record.id,
           record.wallet_id,
           record.amount,
@@ -46,8 +44,8 @@ class TransactionsRepository {
           record.category,
           record.created_by,
           record.timestamp,
-        )
-        .run();
+        ],
+      );
       return record;
     }
     this.transactions.push(record);

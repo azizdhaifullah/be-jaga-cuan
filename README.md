@@ -16,6 +16,14 @@ npm install
 copy .dev.vars.example .dev.vars
 ```
 
+And set Neon connection in `.dev.vars`:
+
+```env
+DATABASE_URL=postgresql://admin:<password>@ep-proud-hill-a1zwja9e-pooler.ap-southeast-1.aws.neon.tech/jaga_cuan?sslmode=require&channel_binding=require
+JWT_SECRET=replace-with-secure-secret
+OTP_FIXED_CODE=123456
+```
+
 3. Run dev server:
 
 ```bash
@@ -26,6 +34,31 @@ npm run dev
 
 ```bash
 npm test
+```
+
+## Deploy to Cloudflare
+
+```bash
+npx wrangler login
+npx wrangler secret put DATABASE_URL
+npx wrangler secret put JWT_SECRET
+npx wrangler secret put OTP_FIXED_CODE
+npx wrangler deploy --env production
+```
+
+Or use scripts:
+
+```bash
+npm run deploy:staging
+npm run deploy:prod
+```
+
+## Smoke Check
+
+After deploy:
+
+```bash
+BASE_URL=https://<your-worker-domain> npm run smoke
 ```
 
 ## Environments

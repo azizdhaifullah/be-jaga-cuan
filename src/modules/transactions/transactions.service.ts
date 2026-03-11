@@ -10,12 +10,12 @@ type CreateTransactionParams = {
 };
 
 class TransactionsService {
-  list(walletId: string, env?: { DB?: D1Database }) {
-    return transactionsRepository.listByWallet(walletId, env?.DB);
+  list(walletId: string, env?: { DATABASE_URL?: string }) {
+    return transactionsRepository.listByWallet(walletId, env?.DATABASE_URL);
   }
 
-  create(params: CreateTransactionParams, env?: { DB?: D1Database }) {
-    return transactionsRepository.create(params, env?.DB);
+  create(params: CreateTransactionParams, env?: { DATABASE_URL?: string }) {
+    return transactionsRepository.create(params, env?.DATABASE_URL);
   }
 }
 

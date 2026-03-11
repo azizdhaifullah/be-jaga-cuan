@@ -1,4 +1,5 @@
 import type { Role } from '../../core/types';
+import { query } from '../../core/db';
 
 export type UserRecord = {
   id: string;
@@ -18,7 +19,7 @@ class AuthRepository {
   private readonly users = new Map<string, UserRecord>();
   private readonly otpSessions = new Map<string, OtpSessionRecord>();
 
-  async createOtpSession(email: string, code: string, db?: D1Database) {
+  async createOtpSession(email: string, code: string, databaseUrl?: string) {
     const id = crypto.randomUUID();
     const session: OtpSessionRecord = {
       id,
@@ -26,49 +27,53 @@ class AuthRepository {
       code,
       created_at: new Date().toISOString(),
     };
-    if (db) {
-      await db
-        .prepare('INSERT INTO otp_sessions (id, email, code, created_at) VALUES (?1, ?2, ?3, ?4)')
-        .bind(session.id, session.email, session.code, session.created_at)
-        .run();
+    if (databaseUrl) {
+      await query(databaseUrl, 'INSERT INTO otp_sessions (id, email, code, created_at) VALUES (?1, ?2, ?3, ?4)', [
+        session.id,
+        session.email,
+        session.code,
+        session.created_at,
+      ]);
       return session;
     }
     this.otpSessions.set(id, session);
     return session;
   }
 
-  async findOtpSession(id: string, db?: D1Database) {
-    if (db) {
-      const row = await db
-        .prepare('SELECT id, email, code, created_at FROM otp_sessions WHERE id = ?1 LIMIT 1')
-        .bind(id)
-        .first<OtpSessionRecord>();
-      return row ?? null;
+  async findOtpSession(id: string, databaseUrl?: string) {
+    if (databaseUrl) {
+      const rows = await query<OtpSessionRecord>(
+        databaseUrl,
+        'SELECT id, email, code, created_at FROM otp_sessions WHERE id = ?1 LIMIT 1',
+        [id],
+      );
+      return rows[0] ?? null;
     }
     return this.otpSessions.get(id) ?? null;
   }
 
-  async consumeOtpSession(id: string, db?: D1Database) {
-    if (db) {
-      await db.prepare('DELETE FROM otp_sessions WHERE id = ?1').bind(id).run();
+  async consumeOtpSession(id: string, databaseUrl?: string) {
+    if (databaseUrl) {
+      await query(databaseUrl, 'DELETE FROM otp_sessions WHERE id = ?1', [id]);
       return;
     }
     this.otpSessions.delete(id);
   }
 
-  async findUserByEmail(email: string, db?: D1Database) {
-    if (db) {
-      const row = await db
-        .prepare('SELECT id, email, wallet_id, role FROM users WHERE email = ?1 LIMIT 1')
-        .bind(email)
-        .first<UserRecord>();
-      return row ?? null;
+  async findUserByEmail(email: string, databaseUrl?: string) {
+    if (databaseUrl) {
+      const rows = await query<UserRecord>(
+        databaseUrl,
+        'SELECT id, email, wallet_id, role FROM users WHERE email = ?1 LIMIT 1',
+        [email],
+      );
+      return rows[0] ?? null;
     }
     return this.users.get(email) ?? null;
   }
 
-  async upsertUser(email: string, db?: D1Database) {
-    const existing = await this.findUserByEmail(email, db);
+  async upsertUser(email: string, databaseUrl?: string) {
+    const existing = await this.findUserByEmail(email, databaseUrl);
     if (existing) {
       return existing;
     }
@@ -78,25 +83,26 @@ class AuthRepository {
       wallet_id: null,
       role: null,
     };
-    if (db) {
-      await db
-        .prepare('INSERT INTO users (id, email, wallet_id, role) VALUES (?1, ?2, NULL, NULL)')
-        .bind(user.id, user.email)
-        .run();
+    if (databaseUrl) {
+      await query(databaseUrl, 'INSERT INTO users (id, email, wallet_id, role) VALUES (?1, ?2, NULL, NULL)', [
+        user.id,
+        user.email,
+      ]);
       return user;
     }
     this.users.set(email, user);
     return user;
   }
 
-  async updateUserWallet(email: string, walletId: string, role: Role, db?: D1Database) {
-    const user = await this.upsertUser(email, db);
+  async updateUserWallet(email: string, walletId: string, role: Role, databaseUrl?: string) {
+    const user = await this.upsertUser(email, databaseUrl);
     const updated = { ...user, wallet_id: walletId, role };
-    if (db) {
-      await db
-        .prepare('UPDATE users SET wallet_id = ?1, role = ?2 WHERE email = ?3')
-        .bind(walletId, role, email)
-        .run();
+    if (databaseUrl) {
+      await query(databaseUrl, 'UPDATE users SET wallet_id = ?1, role = ?2 WHERE email = ?3', [
+        walletId,
+        role,
+        email,
+      ]);
       return updated;
     }
     this.users.set(email, updated);

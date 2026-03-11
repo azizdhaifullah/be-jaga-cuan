@@ -7,9 +7,13 @@
     "dev": "wrangler dev",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "deploy:staging": "wrangler deploy --env staging",
+    "deploy:prod": "wrangler deploy --env production",
+    "smoke": "node scripts/smoke-check.mjs"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.0.1",
     "hono": "^4.8.12"
   },
   "devDependencies": {

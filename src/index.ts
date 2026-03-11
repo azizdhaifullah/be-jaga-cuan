@@ -1,8 +1,7 @@
 import { Hono } from 'hono';
 
 import { runMigrations } from './core/db';
-import { getDb } from './core/env';
-import { getAppEnv } from './core/env';
+import { getAppEnv, getDatabaseUrl } from './core/env';
 import { ApiError } from './core/errors';
 import { fail, ok } from './core/response';
 import { authRoutes } from './modules/auth/auth.routes';
@@ -13,9 +12,9 @@ import { walletsRoutes } from './modules/wallets/wallets.routes';
 const app = new Hono();
 
 app.use('*', async (c, next) => {
-  const db = getDb(c.env);
-  if (db) {
-    await runMigrations(db);
+  const databaseUrl = getDatabaseUrl(c.env);
+  if (databaseUrl) {
+    await runMigrations(databaseUrl);
   }
   await next();
 });
@@ -31,6 +30,7 @@ api.route('/debts', debtsRoutes);
 app.route('/api/v1', api);
 
 app.onError((err, c) => {
+  console.error('Unhandled error', err);
   if (err instanceof ApiError) {
     return fail(c, err.code, err.message, err.status, err.details);
   }
